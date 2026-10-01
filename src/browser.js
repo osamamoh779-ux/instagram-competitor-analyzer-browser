@@ -1,0 +1,4 @@
+import { chromium } from "playwright"; import fs from "node:fs/promises"; import path from "node:path";
+const dir=process.env.SESSION_DIR||"./sessions"; export const stateFile=path.join(dir,"instagram.json");
+export async function ctx(headless=true){await fs.mkdir(dir,{recursive:true});const browser=await chromium.launch({headless});let state;try{await fs.access(stateFile);state=stateFile}catch{};const context=await browser.newContext(state?{storageState:state}:{});return{browser,context}}
+export async function save(context){await fs.mkdir(dir,{recursive:true});await context.storageState({path:stateFile})}

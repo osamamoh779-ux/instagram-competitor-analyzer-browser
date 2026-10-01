@@ -1,0 +1,26 @@
+{
+  "name": "Instagram Research Browser",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "password": "noPassword"
+    }
+  },
+  "forwardPorts": [
+    3000,
+    6080
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "MCP - keep private"
+    },
+    "6080": {
+      "label": "Instagram Login Desktop - keep private"
+    }
+  },
+  "postCreateCommand": "npm install && npx playwright install --with-deps chromium",
+  "containerEnv": {
+    "DISPLAY": ":1"
+  },
+  "remoteUser": "node"
+}
