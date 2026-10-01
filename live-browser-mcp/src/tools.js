@@ -1,0 +1,36 @@
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {z} from 'zod';
+import * as b from './browser.js';
+import {validateURL} from './network.js';
+const target={selector:z.string().min(1).max(1000).optional(),role:z.string().optional(),name:z.string().optional(),text:z.string().optional()};
+const limit={limit:z.number().int().min(1).max(200).default(100)};
+export function makeServer(){
+ const s=new McpServer({name:'live-browser-mcp',version:'0.1.0'});
+ const tool=(name,description,schema,fn,readOnly=false)=>s.registerTool(name,{description,inputSchema:schema,annotations:{readOnlyHint:readOnly,destructiveHint:!readOnly,idempotentHint:readOnly,openWorldHint:true}},async args=>b.serialize(async()=>{try{const result=await fn(args);return result?.content?result:{content:[{type:'text',text:JSON.stringify(result)}]};}catch(e){return {isError:true,content:[{type:'text',text:String(e.message).slice(0,1200)}]};}}));
+ tool('browser_status','Report persistent browser instance and Live View URL. Does not inspect credentials.',{},b.status,true);
+ tool('open_url','Open a public HTTP(S) URL in the active tab. If login/security appears, hand control to user.',{url:z.string().url()},async({url})=>{const p=await b.page();await p.goto(await validateURL(url),{waitUntil:'domcontentloaded'});return b.loginStatus();});
+ tool('get_current_url','Get active tab URL.',{},async()=>({url:(await b.page()).url()}),true);
+ tool('get_page_title','Get active page title.',{},async()=>({title:await(await b.page()).title()}),true);
+ tool('read_page','Read visible page text and visible links; no hidden metrics or credentials.',{},async()=>({...await b.visibleText(),links:await b.links(100)}),true);
+ tool('get_page_text','Read rendered visible body text.',{max_chars:z.number().int().min(100).max(50000).default(20000)},({max_chars})=>b.visibleText(max_chars),true);
+ tool('click','Click an observed unique target. Follow user authorization for actions; no login/security automation.',target,async a=>{await b.guard();const p=await b.page();await b.locator(p,a).click();return b.loginStatus();});
+ tool('type_text','Fill a normal non-sensitive input. Passwords, OTP, security inputs must be entered manually.',{...target,value:z.string().max(20000)},async a=>{await b.guard();const l=b.locator(await b.page(),a);await b.ensureSafeInput(l);await l.fill(a.value);return {typed:true};});
+ tool('scroll','Scroll active page vertically.',{direction:z.enum(['up','down']).default('down'),pixels:z.number().int().min(1).max(5000).default(600)},async a=>{await b.guard();await(await b.page()).mouse.wheel(0,a.direction==='up'?-a.pixels:a.pixels);return {scrolled:true};});
+ tool('go_back','Navigate active tab back.',{},async()=>{await(await b.page()).goBack({waitUntil:'domcontentloaded'});return b.loginStatus();});
+ tool('reload_page','Reload active tab. Never use repeated reloads to evade security checks.',{},async()=>{await b.guard();await(await b.page()).reload({waitUntil:'domcontentloaded'});return b.loginStatus();});
+ tool('screenshot','Capture active viewport. Disabled on login/security pages to avoid reading credentials.',{},async()=>{await b.guard();return {content:[{type:'image',mimeType:'image/png',data:(await(await b.page()).screenshot()).toString('base64')}]};},true);
+ tool('list_tabs','List tabs with stable IDs, URLs and titles.',{},b.tabs,true);
+ tool('switch_tab','Switch active persistent tab.',{id:z.string()},({id})=>b.switchTab(id));
+ tool('open_new_tab','Open a tab in the SAME persistent browser context.',{url:z.string().url().optional()},({url})=>b.newTab(url));
+ tool('close_tab','Close specified tab; retain a usable browser tab.',{id:z.string()},({id})=>b.closeTab(id));
+ tool('save_browser_session','Save session inside ignored runtime directory; never return cookies or credentials.',{},b.save);
+ tool('browser_login_status','Inspect only safe login indicators, never credentials. Instagram cookie existence is boolean only.',{},b.loginStatus,true);
+ tool('inspect_page_links','List visible public links from active page.',limit,({limit})=>b.links(limit),true);
+ tool('extract_links','Extract visible public links from active page.',limit,({limit})=>b.links(limit),true);
+ tool('inspect_visible_elements','Describe visible actionable elements without input values.',limit,({limit})=>b.elements(limit),true);
+ tool('extract_visible_data','Extract rendered text, visible links and visible element descriptions.',{},async()=>({...await b.visibleText(),links:await b.links(),elements:await b.elements()}),true);
+ tool('wait_for_element','Wait for an observed target to become visible.',{...target,timeout_ms:z.number().int().min(100).max(30000).default(12000)},async a=>{await b.guard();await b.locator(await b.page(),a).waitFor({state:'visible',timeout:a.timeout_ms});return {visible:true};},true);
+ tool('press_key','Press navigation/edit key. Blocked on login/security pages.',{...target,key:z.enum(['Enter','Tab','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End','PageUp','PageDown','Backspace','Delete','Control+A'])},async a=>{await b.guard();const p=await b.page();if(a.selector||a.role||a.text)await b.locator(p,a).press(a.key);else await p.keyboard.press(a.key);return b.loginStatus();});
+ tool('select_option','Select value in a native select input.',{...target,value:z.string()},async a=>{await b.guard();await b.locator(await b.page(),a).selectOption(a.value);return {selected:true};});
+ return s;
+}

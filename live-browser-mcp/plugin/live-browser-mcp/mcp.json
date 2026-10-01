@@ -1,0 +1,4 @@
+{
+ "$schema":"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+ "mcpServers":{"live-browser":{"type":"streamable-http","url":"https://humble-fishstick-r7rrwrpwvq472px7q-3100.app.github.dev/mcp"}}
+}

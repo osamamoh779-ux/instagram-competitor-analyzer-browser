@@ -1,0 +1,8 @@
+{
+  "$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name":"live-browser-mcp",
+  "version":"0.1.0",
+  "description":"Control a persistent real Chromium browser in GitHub Codespaces through authenticated MCP tools and a private live desktop.",
+  "author":{"name":"Usama Mohamed"},
+  "extensions":{"com.openai":{"interface":{"displayName":"Live Browser MCP","shortDescription":"Browse with a live browser","longDescription":"Open websites, read rendered pages, click and type, manage tabs and capture screenshots using one persistent Chromium context. Human login and security checks use a private Codespaces live desktop. Runtime availability depends on the Codespace.","developerName":"Usama Mohamed","category":"Productivity","capabilities":["Interactive"],"defaultPrompt":"Open a website in my live browser and read what is visible."}}}
+}

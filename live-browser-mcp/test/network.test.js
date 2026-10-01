@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {publicAddress,validateURL} from '../src/network.js';
+test('rejects local, metadata, mapped private and non-HTTP URLs',async()=>{for(const url of ['http://127.0.0.1','http://169.254.169.254','http://[::1]','http://[::ffff:127.0.0.1]','file:///etc/passwd','http://localhost','http://foo.local','https://user:pass@example.com','https://example.com:3000','https://test-3001.app.github.dev'])await assert.rejects(validateURL(url));});
+test('DNS answers must all be public, including redirect/subrequest validation',async()=>{await assert.rejects(validateURL('https://example.com',async()=>[{address:'93.184.216.34'},{address:'10.0.0.1'}]));assert.equal(await validateURL('https://example.com',async()=>[{address:'93.184.216.34'}]),'https://example.com/');});
+test('reserved and metadata networks are blocked',()=>{for(const ip of ['0.0.0.0','10.0.0.1','100.64.0.1','192.168.0.1','172.16.0.1','224.0.0.1','::','fc00::1','fe80::1','::ffff:10.0.0.1'])assert.equal(publicAddress(ip),false,ip);assert.equal(publicAddress('8.8.8.8'),true);});
