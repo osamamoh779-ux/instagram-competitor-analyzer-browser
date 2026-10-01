@@ -8,6 +8,7 @@
   },
   "forwardPorts": [
     3000,
+    3001,
     6080
   ],
   "portsAttributes": {
@@ -16,6 +17,9 @@
     },
     "6080": {
       "label": "Instagram Login Desktop - keep private"
+    },
+    "3001": {
+      "label": "PRIVATE OAuth approval - never make public"
     }
   },
   "postCreateCommand": "npm install && npx playwright install --with-deps chromium",
