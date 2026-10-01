@@ -14,7 +14,7 @@ app.use(express.json({limit:'256kb'}));app.use(express.urlencoded({extended:fals
 for(const a of [app,privateApp])a.use((_q,r,next)=>{r.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff');next();});
 app.use((q,r,next)=>{if(q.headers.origin&&q.headers.origin!==base)return r.status(403).json({error:'cross_origin_denied'});next();});
 const auth=await installAuth(app,privateApp,{base,consentBase});
-app.get('/health',(_q,r)=>r.json({ok:true,service:'live-browser-mcp',version:'0.1.0',browserReady:true,transport:'streamable-http',authentication:'oauth-pkce',mcp:base+'/mcp'}));
+app.get('/health',(_q,r)=>r.status(b.isRunning()?200:503).json({ok:b.isRunning(),service:'live-browser-mcp',version:'0.1.0',browserReady:b.isRunning(),transport:'streamable-http',authentication:'oauth-pkce',mcp:base+'/mcp'}));
 app.use('/mcp',auth);
 app.post('/mcp',async(q,r)=>{const s=makeServer(),t=new StreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true});r.on('close',()=>{t.close().catch(()=>{});s.close().catch(()=>{});});try{await s.connect(t);await t.handleRequest(q,r,q.body);}catch{if(!r.headersSent)r.status(500).json({error:'mcp_request_failed'});}});
 app.all('/mcp',(_q,r)=>r.status(405).set('Allow','POST').json({error:'method_not_allowed'}));

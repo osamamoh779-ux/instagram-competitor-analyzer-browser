@@ -13,7 +13,7 @@ export async function getContext(){
   if(context)return context;
   if(!starting)starting=(async()=>{
     await fs.mkdir(runtime,{recursive:true,mode:0o700});
-    context=await chromium.launchPersistentContext(path.join(runtime,'profile'),{headless:process.env.HEADLESS==='true',viewport:{width:1280,height:800},acceptDownloads:false,serviceWorkers:'block'});
+    context=await chromium.launchPersistentContext(path.join(runtime,'profile'),{headless:process.env.HEADLESS==='true',viewport:{width:1280,height:800},acceptDownloads:false,serviceWorkers:'block',handleSIGINT:false,handleSIGTERM:false,handleSIGHUP:false});
     context.setDefaultTimeout(12000); context.setDefaultNavigationTimeout(30000);
     await context.route('**/*',async route=>{try{await validateURL(route.request().url());await route.continue();}catch{await route.abort('blockedbyclient');}});
     await context.routeWebSocket('**/*',async route=>{try{await validateURL(route.url().replace(/^ws/,'http'));route.connectToServer();}catch{route.close();}});
@@ -36,7 +36,8 @@ export async function loginStatus(){const p=await page();const markers=await p.e
 }
 export async function guard(){const s=await loginStatus();if(s.requiresHuman)throw Error('HUMAN_LOGIN_OR_SECURITY_CHECK_REQUIRED: hand control to user in private Live View; do not read, type, screenshot, or automate credentials/security checks');}
 export async function save(){await getContext();await fs.mkdir(runtime,{recursive:true,mode:0o700});await context.storageState({path:path.join(runtime,'session.json')});await fs.chmod(path.join(runtime,'session.json'),0o600);return {saved:true,credentialsReturned:false,persistentProfile:true};}
-export async function shutdown(){if(context){await save();await context.close();}}
+export function isRunning(){return !!context;}
+export async function shutdown(){if(context){try{await save();}catch{}try{await context.close();}catch{}}}
 export async function visibleText(max=20000){await guard();const p=await page();return {url:p.url(),title:await p.title(),text:(await p.locator('body').innerText()).slice(0,max)};}
 export async function links(max=100){await guard();const p=await page();return p.locator('a[href]').evaluateAll((items,limit)=>items.filter(e=>e.getClientRects().length).slice(0,limit).map(e=>({text:(e.innerText||e.getAttribute('aria-label')||'').slice(0,250),url:e.href})),max);}
 export async function elements(max=100){await guard();const p=await page();return p.locator('a,button,input,select,textarea,[role=button],[role=link]').evaluateAll((items,limit)=>items.filter(e=>e.getClientRects().length).slice(0,limit).map(e=>({tag:e.tagName.toLowerCase(),role:e.getAttribute('role'),text:(e.innerText||e.getAttribute('aria-label')||'').slice(0,200),id:e.id||undefined,name:e.getAttribute('name')||undefined,type:e.getAttribute('type')||undefined,placeholder:e.getAttribute('placeholder')||undefined,href:e.tagName==='A'?e.href:undefined})),max);}
