@@ -2,6 +2,10 @@
 
 This subproject leaves the existing Instagram source and plugin untouched. It uses a separate persistent Chromium profile under `runtime/` and MCP port **3100**. Private OAuth approval uses **3101**; the existing private Codespaces desktop/noVNC uses **6080**. All runtime state, OAuth tokens, cookies and profiles are ignored by Git.
 
+## Private mobile web app
+
+Open `https://<codespace>-3101.app.github.dev/app` from Safari while signed in to GitHub. The private Codespaces port supplies access control, so no app password is stored in Git. The Arabic chat UI controls the same persistent Chromium context and links to the private noVNC view for manual sign-in. Passwords, OTPs, CAPTCHA and security-check pages remain manual.
+
 ## Codespaces
 
 Use the repository's existing desktop-lite devcontainer. From this directory:
