@@ -12,7 +12,7 @@ const app=express(),privateApp=express();
 app.disable('x-powered-by');privateApp.disable('x-powered-by');
 app.use(express.json({limit:'256kb'}));app.use(express.urlencoded({extended:false,limit:'32kb'}));privateApp.use(express.urlencoded({extended:false,limit:'32kb'}));
 for(const a of [app,privateApp])a.use((_q,r,next)=>{r.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff');next();});
-app.use((q,r,next)=>{if(q.headers.origin&&q.headers.origin!==base)return r.status(403).json({error:'cross_origin_denied'});next();});
+app.use((q,r,next)=>{if(q.headers.origin){let allowed=false;try{const u=new URL(q.headers.origin);allowed=q.headers.origin===base||(u.protocol==='https:'&&['chatgpt.com','chat.openai.com'].includes(u.hostname));}catch{}if(allowed===false)return r.status(403).json({error:'cross_origin_denied'});}next();});
 const auth=await installAuth(app,privateApp,{base,consentBase});
 app.get('/health',(_q,r)=>r.status(b.isRunning()?200:503).json({ok:b.isRunning(),service:'live-browser-mcp',version:'0.1.0',browserReady:b.isRunning(),transport:'streamable-http',authentication:'oauth-pkce',mcp:base+'/mcp'}));
 app.use('/mcp',auth);
